@@ -67,7 +67,7 @@
                     </div>
                 </li>
 
-                @permission('read-install-updates')
+                @can('read-install-updates')
                     <li class="nav-item">
                         <a class="nav-link" href="{{ route('updates.index') }}" title="{{ $updates }} Updates Available" role="button" aria-haspopup="true" aria-expanded="false">
                             <span>
@@ -78,7 +78,7 @@
                             @endif
                         </a>
                     </li>
-                @endpermission
+                @endcan
 
                 <li class="nav-item d-none d-md-block">
                     <a class="nav-link" href="{{ url(trans('header.support_link')) }}" target="_blank" title="{{ trans('general.help') }}" role="button" aria-haspopup="true" aria-expanded="false">
@@ -91,14 +91,18 @@
                 <li class="nav-item dropdown">
                     <a class="nav-link pr-0" href="#" role="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
                         <div class="media align-items-center">
-                            <img src="{{ asset('public/img/user.svg') }}" height="36" width="36" alt="User"/>
-                            <div class="media-body ml-2">
-                                <span class="mb-0 text-sm font-weight-bold">
-                                    @if (!empty($user->name))
-                                        {{ $user->name }}
-                                    @endif
-                                </span>
-                            </div>
+                            @if (setting('default.use_gravatar', '0') == '1')
+                                <img src="{{ $user->picture }}" alt="{{ $user->name }}" class="rounded-circle image-style user-img" title="{{ $user->name }}">
+                            @elseif (is_object($user->picture))
+                                <img src="{{ Storage::url($user->picture->id) }}" class="rounded-circle image-style user-img" alt="{{ $user->name }}" title="{{ $user->name }}">
+                            @else
+                                <img src="{{ asset('public/img/user.svg') }}" class="user-img" alt="{{ $user->name }}"/>
+                            @endif
+                            @if (!empty($user->name))
+                                <div class="media-body ml-2">
+                                    <span class="mb-0 text-sm font-weight-bold">{{ $user->name }}</span>
+                                </div>
+                            @endif
                         </div>
                     </a>
                     <div class="dropdown-menu dropdown-menu-right">

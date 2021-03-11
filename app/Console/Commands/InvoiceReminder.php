@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Events\Sale\InvoiceReminded;
+use App\Events\Document\DocumentReminded;
 use App\Models\Common\Company;
-use App\Models\Sale\Invoice;
+use App\Models\Document\Document;
+use App\Notifications\Sale\Invoice as Notification;
 use App\Utilities\Overrider;
 use Date;
 use Illuminate\Console\Command;
@@ -36,9 +37,14 @@ class InvoiceReminder extends Command
         config(['laravel-model-caching.enabled' => false]);
 
         // Get all companies
-        $companies = Company::enabled()->cursor();
+        $companies = Company::enabled()->withCount('invoices')->cursor();
 
         foreach ($companies as $company) {
+            // Has company invoices
+            if (!$company->invoices_count) {
+                continue;
+            }
+
             $this->info('Sending invoice reminders for ' . $company->name . ' company.');
 
             // Set company id
@@ -75,10 +81,16 @@ class InvoiceReminder extends Command
         $date = Date::today()->subDays($day)->toDateString();
 
         // Get upcoming invoices
-        $invoices = Invoice::with('contact')->accrued()->notPaid()->due($date)->cursor();
+        $invoices = Document::invoice()->with('contact')->accrued()->notPaid()->due($date)->cursor();
 
         foreach ($invoices as $invoice) {
-            event(new InvoiceReminded($invoice));
+            try {
+                event(new DocumentReminded($invoice, Notification::class));
+            } catch (\Exception | \Throwable | \Swift_RfcComplianceException | \Illuminate\Database\QueryException $e) {
+                $this->error($e->getMessage());
+
+                logger('Invoice reminder:: ' . $e->getMessage());
+            }
         }
     }
 }

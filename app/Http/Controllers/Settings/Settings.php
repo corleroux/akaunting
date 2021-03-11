@@ -54,14 +54,16 @@ class Settings extends Controller
         $settings = [];
 
         foreach ($modules->settings as $alias => $setting) {
-            if (!user()->can('read-' . $alias . '-settings')) {
+            $permission = !empty($setting['permission']) ? $setting['permission'] : 'read-' . $alias . '-settings';
+
+            if (!user()->can($permission)) {
                 continue;
             }
 
             $settings[$alias] = $setting;
         }
 
-        return view('settings.settings.index', ['modules' => $settings]);
+        return $this->response('settings.settings.index', ['modules' => $settings]);
     }
 
     /**

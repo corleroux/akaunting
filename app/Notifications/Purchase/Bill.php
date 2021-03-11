@@ -66,22 +66,32 @@ class Bill extends Notification
         return [
             '{bill_number}',
             '{bill_total}',
+            '{bill_amount_due}',
             '{bill_due_date}',
             '{bill_admin_link}',
             '{vendor_name}',
             '{company_name}',
+            '{company_email}',
+            '{company_tax_number}',
+            '{company_phone}',
+            '{company_address}',
         ];
     }
 
     public function getTagsReplacement()
     {
         return [
-            $this->bill->bill_number,
+            $this->bill->document_number,
             money($this->bill->amount, $this->bill->currency_code, true),
+            money($this->bill->amount_due, $this->bill->currency_code, true),
             company_date($this->bill->due_at),
             route('bills.show', $this->bill->id),
             $this->bill->contact_name,
-            $this->bill->company->name
+            $this->bill->company->name,
+            $this->bill->company->email,
+            $this->bill->company->tax_number,
+            $this->bill->company->phone,
+            nl2br(trim($this->bill->company->address)),
         ];
     }
 }

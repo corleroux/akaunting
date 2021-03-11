@@ -6,6 +6,8 @@
 
     <title>@yield('title') - @setting('company.name')</title>
 
+    <base href="{{ config('app.url') . '/' }}">
+
     @include('partials.pwa.pwa')
 
     <!-- Favicon -->
@@ -32,6 +34,7 @@
         var url = '{{ url("/") }}';
         var app_home = '{{ route("apps.home.index") }}';
         var app_url = '{{ config("app.url") }}';
+        var aka_currency = {!! !empty($currency) ? $currency : 'false' !!};
     //--></script>
 
     @stack('js')

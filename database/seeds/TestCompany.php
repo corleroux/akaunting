@@ -55,6 +55,14 @@ class TestCompany extends Seeder
 
         session(['company_id' => $company->id]);
 
+        // Set Company settings
+        setting()->setExtraColumns(['company_id' => $company->id]);
+        setting()->forgetAll();
+        setting()->load(true);
+
+        setting()->set(['email.protocol' => 'array']);
+        setting()->save();
+
         $this->command->info('Test company created.');
     }
 
@@ -79,7 +87,7 @@ class TestCompany extends Seeder
             'type' => 'customer',
             'name' => 'Test Customer',
             'email' => 'customer@company.com',
-            'currency_code' => setting('default.currency', 'USD'),
+            'currency_code' => setting('default.currency'),
             'password' => '123456',
             'password_confirmation' => '123456',
             'company_id' => session('company_id'),

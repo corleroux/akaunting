@@ -2,9 +2,10 @@
 
 namespace App\Console\Commands;
 
-use App\Events\Purchase\BillReminded;
+use App\Events\Document\DocumentReminded;
 use App\Models\Common\Company;
-use App\Models\Purchase\Bill;
+use App\Models\Document\Document;
+use App\Notifications\Purchase\Bill as Notification;
 use App\Utilities\Overrider;
 use Date;
 use Illuminate\Console\Command;
@@ -36,9 +37,14 @@ class BillReminder extends Command
         config(['laravel-model-caching.enabled' => false]);
 
         // Get all companies
-        $companies = Company::enabled()->cursor();
+        $companies = Company::enabled()->withCount('bills')->cursor();
 
         foreach ($companies as $company) {
+            // Has company bills
+            if (!$company->bills_count) {
+                continue;
+            }
+
             $this->info('Sending bill reminders for ' . $company->name . ' company.');
 
             // Set company id
@@ -75,11 +81,16 @@ class BillReminder extends Command
         $date = Date::today()->addDays($day)->toDateString();
 
         // Get upcoming bills
-        $bills = Bill::with('contact')->accrued()->notPaid()->due($date)->cursor();
+        $bills = Document::bill()->with('contact')->accrued()->notPaid()->due($date)->cursor();
 
         foreach ($bills as $bill) {
-            event(new BillReminded($bill));
-            
+            try {
+                event(new DocumentReminded($bill, Notification::class));
+            } catch (\Exception | \Throwable | \Swift_RfcComplianceException | \Illuminate\Database\QueryException $e) {
+                $this->error($e->getMessage());
+
+                logger('Bill reminder:: ' . $e->getMessage());
+            }
         }
     }
 }

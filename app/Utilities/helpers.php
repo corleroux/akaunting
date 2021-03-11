@@ -13,13 +13,29 @@ if (!function_exists('user')) {
     function user()
     {
         // Get user from api/web
-        if (request()->is('api/*')) {
+        if (request()->isApi()) {
             $user = app('Dingo\Api\Auth\Auth')->user();
         } else {
             $user = auth()->user();
         }
 
         return $user;
+    }
+}
+
+if (!function_exists('company_date_format')) {
+    /**
+     * Format the given date based on company settings.
+     *
+     * @return string
+     */
+    function company_date_format()
+    {
+        $date_time = new class() {
+            use DateTime;
+        };
+
+        return $date_time->getCompanyDateFormat();
     }
 }
 
@@ -31,11 +47,7 @@ if (!function_exists('company_date')) {
      */
     function company_date($date)
     {
-        $date_time = new class() {
-            use DateTime;
-        };
-
-        return Date::parse($date)->format($date_time->getCompanyDateFormat());
+        return Date::parse($date)->format(company_date_format());
     }
 }
 
@@ -52,5 +64,16 @@ if (!function_exists('show_widget')) {
         $model = array_shift($arguments);
 
         return Widgets::show($model, ...$arguments);
+    }
+}
+
+if (!function_exists('cache_prefix')) {
+    /**
+     * Cache system added company_id prefix.
+     *
+     * @return string
+     */
+    function cache_prefix() {
+        return session('company_id') . '_';
     }
 }

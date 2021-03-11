@@ -3,18 +3,17 @@
 namespace App\Listeners\Auth;
 
 use App\Utilities\Date;
-use Illuminate\Auth\Events\Login as ILogin;
+use Illuminate\Auth\Events\Login as Event;
 
 class Login
 {
-
     /**
      * Handle the event.
      *
-     * @param ILogin $event
+     * @param Event $event
      * @return void
      */
-    public function handle(ILogin $event)
+    public function handle(Event $event)
     {
         // Get first company
         $company = $event->user->companies()->enabled()->first();
@@ -23,7 +22,7 @@ class Login
         if (!$company) {
             app('App\Http\Controllers\Auth\Login')->logout();
 
-            flash(trans('auth.error.no_company'))->error();
+            flash(trans('auth.error.no_company'))->error()->important();
 
             return;
         }

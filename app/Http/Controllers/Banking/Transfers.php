@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Banking;
 
 use App\Abstracts\Http\Controller;
 use App\Http\Requests\Banking\Transfer as Request;
+use App\Exports\Banking\Transfers as Export;
+use App\Http\Requests\Common\Import as ImportRequest;
+use App\Imports\Banking\Transfers as Import;
 use App\Jobs\Banking\CreateTransfer;
 use App\Jobs\Banking\UpdateTransfer;
 use App\Jobs\Banking\DeleteTransfer;
@@ -22,64 +25,11 @@ class Transfers extends Controller
      */
     public function index()
     {
-        $data = [];
-
-        $items = Transfer::with(
+        $transfers = Transfer::with(
             'expense_transaction', 'expense_transaction.account', 'income_transaction', 'income_transaction.account'
         )->collect(['expense_transaction.paid_at' => 'desc']);
 
-        foreach ($items as $item) {
-            $income_transaction = $item->income_transaction;
-            $expense_transaction = $item->expense_transaction;
-
-            $name = trans('transfers.messages.delete', [
-                'from' => $expense_transaction->account->name,
-                'to' => $income_transaction->account->name,
-                'amount' => money($expense_transaction->amount, $expense_transaction->currency_code, true)
-            ]);
-
-            $data[] = (object) [
-                'id' => $item->id,
-                'name' => $name,
-                'from_account' => $expense_transaction->account->name,
-                'to_account' => $income_transaction->account->name,
-                'amount' => $expense_transaction->amount,
-                'currency_code' => $expense_transaction->currency_code,
-                'paid_at' => $expense_transaction->paid_at,
-            ];
-        }
-
-        $special_key = array(
-            'expense_transaction.name' => 'from_account',
-            'income_transaction.name' => 'to_account',
-        );
-
-        $request = request();
-
-        if (isset($request['sort']) && array_key_exists($request['sort'], $special_key)) {
-            $sort_order = array();
-
-            foreach ($data as $key => $value) {
-                $sort = $request['sort'];
-
-                if (array_key_exists($request['sort'], $special_key)) {
-                    $sort = $special_key[$request['sort']];
-                }
-
-                $sort_order[$key] = $value->{$sort};
-            }
-
-            $sort_type = (isset($request['order']) && $request['order'] == 'asc') ? SORT_ASC : SORT_DESC;
-
-            array_multisort($sort_order, $sort_type, $data);
-        }
-
-        $transfers = $this->paginate($data);
-
-        $accounts = collect(Account::enabled()->orderBy('name')->pluck('name', 'id'))
-            ->prepend(trans('general.all_type', ['type' => trans_choice('general.accounts', 2)]), '');
-
-        return view('banking.transfers.index', compact('transfers', 'accounts'));
+        return $this->response('banking.transfers.index', compact('transfers'));
     }
 
     /**
@@ -130,7 +80,35 @@ class Transfers extends Controller
 
             $message = $response['message'];
 
-            flash($message)->error();
+            flash($message)->error()->important();
+        }
+
+        return response()->json($response);
+    }
+
+    /**
+     * Import the specified resource.
+     *
+     * @param  ImportRequest  $request
+     *
+     * @return Response
+     */
+    public function import(ImportRequest $request)
+    {
+        $response = $this->importExcel(new Import, $request);
+
+        if ($response['success']) {
+            $response['redirect'] = route('transfers.index');
+
+            $message = trans('messages.success.imported', ['type' => trans_choice('general.transfers', 2)]);
+
+            flash($message)->success();
+        } else {
+            $response['redirect'] = route('import.create', ['banking', 'transfers']);
+
+            $message = $response['message'];
+
+            flash($message)->error()->important();
         }
 
         return response()->json($response);
@@ -187,7 +165,7 @@ class Transfers extends Controller
 
             $message = $response['message'];
 
-            flash($message)->error();
+            flash($message)->error()->important();
         }
 
         return response()->json($response);
@@ -213,9 +191,19 @@ class Transfers extends Controller
         } else {
             $message = $response['message'];
 
-            flash($message)->error();
+            flash($message)->error()->important();
         }
 
         return response()->json($response);
+    }
+
+    /**
+     * Export the specified resource.
+     *
+     * @return Response
+     */
+    public function export()
+    {
+        return $this->exportExcel(new Export, trans_choice('general.transfers', 2));
     }
 }

@@ -24,7 +24,7 @@
 
                     {{ Form::moneyGroup('amount', trans('general.amount'), 'money-bill-alt', ['required' => 'required', 'currency' => $currency, 'dynamic-currency' => 'currency'], $transfer->amount) }}
 
-                    {{ Form::dateGroup('transferred_at', trans('general.date'), 'calendar', ['id' => 'transferred_at', 'class' => 'form-control datepicker', 'required' => 'required', 'date-format' => 'Y-m-d', 'autocomplete' => 'off'], Date::parse($transfer->transferred_at)->toDateString()) }}
+                    {{ Form::dateGroup('transferred_at', trans('general.date'), 'calendar', ['id' => 'transferred_at', 'class' => 'form-control datepicker', 'required' => 'required', 'show-date-format' => company_date_format(), 'date-format' => 'Y-m-d', 'autocomplete' => 'off'], Date::parse($transfer->transferred_at)->toDateString()) }}
 
                     {{ Form::textareaGroup('description', trans('general.description')) }}
 
@@ -37,13 +37,13 @@
                 </div>
             </div>
 
-            @permission('update-banking-transfers')
+            @can('update-banking-transfers')
                 <div class="card-footer">
                     <div class="row save-buttons">
                         {{ Form::saveButtons('transfers.index') }}
                     </div>
                 </div>
-            @endpermission
+            @endcan
         {!! Form::close() !!}
     </div>
 @endsection

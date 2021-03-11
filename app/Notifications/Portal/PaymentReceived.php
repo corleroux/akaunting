@@ -91,16 +91,20 @@ class PaymentReceived extends Notification
             '{transaction_payment_method}',
             '{customer_name}',
             '{company_name}',
+            '{company_email}',
+            '{company_tax_number}',
+            '{company_phone}',
+            '{company_address}',
         ];
     }
 
     public function getTagsReplacement()
     {
         return [
-            $this->invoice->invoice_number,
+            $this->invoice->document_number,
             money($this->invoice->amount, $this->invoice->currency_code, true),
             company_date($this->invoice->due_at),
-            trans('invoices.statuses.' . $this->invoice->status),
+            trans('documents.statuses.' . $this->invoice->status),
             URL::signedRoute('signed.invoices.show', [$this->invoice->id, 'company_id' => $this->invoice->company_id]),
             route('invoices.show', $this->invoice->id),
             route('portal.invoices.show', $this->invoice->id),
@@ -108,7 +112,11 @@ class PaymentReceived extends Notification
             company_date($this->transaction->paid_at),
             $this->transaction->payment_method,
             $this->invoice->contact_name,
-            $this->invoice->company->name
+            $this->invoice->company->name,
+            $this->invoice->company->email,
+            $this->invoice->company->tax_number,
+            $this->invoice->company->phone,
+            nl2br(trim($this->invoice->company->address)),
         ];
     }
 }

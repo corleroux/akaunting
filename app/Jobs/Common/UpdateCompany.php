@@ -3,6 +3,8 @@
 namespace App\Jobs\Common;
 
 use App\Abstracts\Job;
+use App\Events\Common\CompanyUpdated;
+use App\Events\Common\CompanyUpdating;
 use App\Models\Common\Company;
 use App\Traits\Users;
 
@@ -14,16 +16,19 @@ class UpdateCompany extends Job
 
     protected $request;
 
+    protected $active_company_id;
+
     /**
      * Create a new job instance.
      *
      * @param  $company
      * @param  $request
      */
-    public function __construct($company, $request)
+    public function __construct($company, $request, $active_company_id)
     {
         $this->company = $company;
         $this->request = $this->getRequestInstance($request);
+        $this->active_company_id = $active_company_id;
     }
 
     /**
@@ -34,6 +39,8 @@ class UpdateCompany extends Job
     public function handle()
     {
         $this->authorize();
+
+        event(new CompanyUpdating($this->company, $this->request));
 
         \DB::transaction(function () {
             $this->company->update($this->request->all());
@@ -49,6 +56,14 @@ class UpdateCompany extends Job
 
             if ($this->request->has('email')) {
                 setting()->set('company.email', $this->request->get('email'));
+            }
+
+            if ($this->request->has('tax_number')) {
+                setting()->set('company.tax_number', $this->request->get('tax_number'));
+            }
+
+            if ($this->request->has('phone')) {
+                setting()->set('company.phone', $this->request->get('phone'));
             }
 
             if ($this->request->has('address')) {
@@ -77,6 +92,8 @@ class UpdateCompany extends Job
             setting()->forgetAll();
         });
 
+        event(new CompanyUpdated($this->company, $this->request));
+
         return $this->company;
     }
 
@@ -88,7 +105,7 @@ class UpdateCompany extends Job
     public function authorize()
     {
         // Can't disable active company
-        if (($this->request->get('enabled', 1) == 0) && ($this->company->id == session('company_id'))) {
+        if (($this->request->get('enabled', 1) == 0) && ($this->company->id == $this->active_company_id)) {
             $message = trans('companies.error.disable_active');
 
             throw new \Exception($message);

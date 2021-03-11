@@ -74,26 +74,36 @@ class Invoice extends Notification
         return [
             '{invoice_number}',
             '{invoice_total}',
+            '{invoice_amount_due}',
             '{invoice_due_date}',
             '{invoice_guest_link}',
             '{invoice_admin_link}',
             '{invoice_portal_link}',
             '{customer_name}',
             '{company_name}',
+            '{company_email}',
+            '{company_tax_number}',
+            '{company_phone}',
+            '{company_address}',
         ];
     }
 
     public function getTagsReplacement()
     {
         return [
-            $this->invoice->invoice_number,
+            $this->invoice->document_number,
             money($this->invoice->amount, $this->invoice->currency_code, true),
+            money($this->invoice->amount_due, $this->invoice->currency_code, true),
             company_date($this->invoice->due_at),
             URL::signedRoute('signed.invoices.show', [$this->invoice->id, 'company_id' => $this->invoice->company_id]),
             route('invoices.show', $this->invoice->id),
             route('portal.invoices.show', $this->invoice->id),
             $this->invoice->contact_name,
-            $this->invoice->company->name
+            $this->invoice->company->name,
+            $this->invoice->company->email,
+            $this->invoice->company->tax_number,
+            $this->invoice->company->phone,
+            nl2br(trim($this->invoice->company->address)),
         ];
     }
 }
